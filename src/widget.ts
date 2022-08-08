@@ -13,47 +13,45 @@ import { MODULE_NAME, MODULE_VERSION } from './version';
 import { poll } from './poll';
 import clamp from './clamp';
 
-type NodeType = {
+interface NodeData {
   status: string;
   name: string;
-};
+}
 
-type Positions = {
+interface Positions {
   [s: string]: [number, number];
-};
+}
 
-type NodeDetails = {
+interface ServerGraph {
+  nodes: string[];
+  edges: Array<[string, string]>;
+  node_details: {
+    [s: string]: NodeData;
+  };
+  root_nodes?: string[];
+  positions: Positions;
+}
+
+interface NodeDetails {
   fx: number;
   fy: number;
   id: string;
   index: number;
   name: string;
   status: string;
-  vx: number;
-  vy: number;
   x: number;
   y: number;
-};
+}
 
-type Link = {
+interface Link {
   source: NodeDetails;
   target: NodeDetails;
-};
+}
 
-type EventData = {
+interface WorkerData {
   type: string;
   nodes: NodeDetails[];
   links: Link[];
-};
-
-interface IDataType {
-  nodes: string[];
-  edges: Array<string[]>;
-  node_details: {
-    [s: string]: NodeType;
-  };
-  root_nodes?: string[];
-  positions: Positions;
 }
 
 const NODE_SIZE = 15;
@@ -86,7 +84,7 @@ export class DagVisualizeModel extends DOMWidgetModel {
   static view_module_version = MODULE_VERSION;
 }
 export class DagVisualizeView extends DOMWidgetView {
-  data: IDataType | undefined;
+  data: ServerGraph | undefined;
   transform: any;
   svg: any;
   wrapper: any;
@@ -188,7 +186,10 @@ export class DagVisualizeView extends DOMWidgetView {
       .style('opacity', 0);
   }
 
-  getRootNodes(nodes: IDataType['nodes'], edges: IDataType['edges']): string[] {
+  getRootNodes(
+    nodes: ServerGraph['nodes'],
+    edges: ServerGraph['edges']
+  ): string[] {
     const hasNoParent = (node: string) =>
       edges.every(([, parent]: string[]) => node !== parent);
 
@@ -218,7 +219,7 @@ export class DagVisualizeView extends DOMWidgetView {
   }
 
   async createDag(): Promise<void> {
-    const { nodes, edges, node_details, positions } = this.data as IDataType;
+    const { nodes, edges, node_details, positions } = this.data as ServerGraph;
     const [MAX_WIDTH, MAX_HEIGHT] = this.calculateBounds(positions);
     const [height, scaleY] = this.getHeightScale(MAX_HEIGHT, MAX_WIDTH);
     const svg = d3.select(this.el).select('svg');
@@ -260,18 +261,23 @@ export class DagVisualizeView extends DOMWidgetView {
       target: child
     }));
 
-    const nodeDetails = Object.entries(node_details).map(
+    const nodeDetails: NodeDetails[] = Object.entries(node_details).map(
       ([nodeId, nodeData], i) => {
         const nodePosition = (this.positions as Positions)[nodeId];
-        const [fx, fy] = nodePosition;
+        const [rawX, rawY] = nodePosition;
+
+        const x = rawX + circleSize / 2;
+        const y = (MAX_HEIGHT - rawY) * scaleY;
 
         return {
           index: i,
           name: nodeData.name,
           status: nodeData.status,
           id: nodeId,
-          fx: fx + circleSize / 2,
-          fy: (MAX_HEIGHT - fy) * scaleY
+          fx: x,
+          fy: y,
+          x,
+          y
         };
       }
     );
@@ -281,7 +287,7 @@ export class DagVisualizeView extends DOMWidgetView {
       nodes: nodeDetails,
       links
     });
-    worker.onmessage = (event: MessageEvent<EventData>) => {
+    worker.onmessage = (event: MessageEvent<WorkerData>) => {
       if (event.data.type !== 'end') {
         return;
       }
