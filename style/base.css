@@ -63,11 +63,13 @@ svg{
   pointer-events: none;
 }
 
-.tiledb-widget .Not.Started {
+.tiledb-widget .not-started,
+.tiledb-widget .waiting,
+.tiledb-widget .ready {
   fill: var(--kashmir);
 }
 
-.tiledb-widget .Running {
+.tiledb-widget .running {
   animation: dash 15s linear;
   animation-iteration-count: infinite;
   fill: #66cc99;
@@ -76,11 +78,11 @@ svg{
   stroke-width: 3px;
 }
 
-.tiledb-widget .Running.node--small {
+.tiledb-widget .running.node--small {
   stroke-width: 1px;
 }
 
-.tiledb-widget .path-Running {
+.tiledb-widget .path-running {
   animation: dash-full 1s linear;
   animation-iteration-count: infinite;
   stroke-dasharray: 10;
@@ -96,15 +98,17 @@ svg{
   margin-top: 5px;
 }
 
-.tiledb-widget .Completed {
+.tiledb-widget .completed,
+.tiledb-widget .succeeded {
   fill: var(--success);
 }
 
-.tiledb-widget .Failed {
+.tiledb-widget .failed {
   fill: var(--danger);
 }
 
-.tiledb-widget .Cancelled {
+.tiledb-widget .cancelled,
+.tiledb-widget .parent-failed {
   fill: var(--warning);
 }
 

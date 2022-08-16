@@ -246,6 +246,7 @@ export class DagVisualizeView extends DOMWidgetView {
     }
     const numberOfNodes = nodes.length;
     const lessThanThirtyNodes = numberOfNodes < 30;
+    const smallNodeClass = lessThanThirtyNodes ? 'node--small' : '';
 
     /**
      * Sometimes during updates we are getting different/weird positions object
@@ -307,10 +308,13 @@ export class DagVisualizeView extends DOMWidgetView {
                 d.target.y
               }`;
             })
-            .attr('class', (d: Link) => `path-${d.target.status}`);
+            .attr('class', (d: Link) => `path-${toCSSClass(d.target.status)}`);
         },
         (update: any) =>
-          update.attr('class', (d: Link) => `path-${d.target.status}`)
+          update.attr(
+            'class',
+            (d: Link) => `path-${toCSSClass(d.target.status)}`
+          )
       );
 
       const circles = this.wrapper.selectAll('circle').data(nodes);
@@ -324,8 +328,7 @@ export class DagVisualizeView extends DOMWidgetView {
             .attr('r', circleSize)
             .attr(
               'class',
-              (d: NodeDetails) =>
-                `${d.status} ${lessThanThirtyNodes ? 'node--small' : ''}`
+              (d: NodeDetails) => `${toCSSClass(d.status)} ${smallNodeClass}`
             )
             .on('mouseover', (event: any, d: NodeDetails) => {
               const caption = d.name || d.id;
@@ -345,8 +348,7 @@ export class DagVisualizeView extends DOMWidgetView {
         (update: any) => {
           update.attr(
             'class',
-            (d: NodeDetails) =>
-              `${d.status} ${lessThanThirtyNodes ? 'node--small' : ''}`
+            (d: NodeDetails) => `${toCSSClass(d.status)} ${smallNodeClass}`
           );
         },
         (exit: any) => {
@@ -371,4 +373,8 @@ export class DagVisualizeView extends DOMWidgetView {
     this.el.append(zoomOutButton);
     this.el.append(resetButton);
   }
+}
+
+function toCSSClass(status: string): string {
+  return status.toLowerCase().replace(/[ _]/g, '-');
 }
