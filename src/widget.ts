@@ -207,6 +207,7 @@ export class DagVisualizeView extends DOMWidgetView {
 
   /**
    * We squeeze vertically the visualization in case it is too tall
+   * we return the new height and how much it was scaled down
    */
   getHeightScale(height: number, width: number): [number, number] {
     const MAX_HEIGHT_RATIO = 0.7;
@@ -224,7 +225,18 @@ export class DagVisualizeView extends DOMWidgetView {
     const [height, scaleY] = this.getHeightScale(MAX_HEIGHT, MAX_WIDTH);
     const svg = d3.select(this.el).select('svg');
     const circleSize = this.getNodeSize(scaleY);
-    const viewBoxWidth = MAX_WIDTH + circleSize;
+    const widthWithPadding = MAX_WIDTH + circleSize;
+    /**
+     * We clamp width of the svg to be at least 15 times biggger than the node's size so nodes
+     * don't look really big and take big part of the screen, this was evident for graphs with 1-2 nodes.
+     */
+    const viewBoxWidth = clamp(
+      NODE_SIZE * 15,
+      widthWithPadding,
+      widthWithPadding
+    );
+    const horizontalOffset = (viewBoxWidth - widthWithPadding) / 2;
+    const numberOfNodes = nodes.length;
     /**
      * In case plot is really big the edges betweend nodes are faint, make them bolder
      */
@@ -237,6 +249,12 @@ export class DagVisualizeView extends DOMWidgetView {
     if (pathsShouldBeBolder) {
       svg.attr('class', 'tiledb-plot--bolder');
     }
+
+    if (horizontalOffset) {
+      const group = this.svg.select('g');
+
+      group.attr('transform', `translate(${horizontalOffset})`);
+    }
     /**
      * During initialization the wrapper elemete (this.el) has no width,
      * we wait for that before we do any DOM calculations.
@@ -244,9 +262,8 @@ export class DagVisualizeView extends DOMWidgetView {
     if (!this.initialized) {
       await poll(() => this.el.offsetWidth > 0, 300);
     }
-    const numberOfNodes = nodes.length;
     const lessThanThirtyNodes = numberOfNodes < 30;
-    const smallNodeClass = lessThanThirtyNodes ? 'node--small' : '';
+    const additionalCssClasses = lessThanThirtyNodes ? 'node--small' : '';
 
     /**
      * Sometimes during updates we are getting different/weird positions object
@@ -328,7 +345,8 @@ export class DagVisualizeView extends DOMWidgetView {
             .attr('r', circleSize)
             .attr(
               'class',
-              (d: NodeDetails) => `${toCSSClass(d.status)} ${smallNodeClass}`
+              (d: NodeDetails) =>
+                `${toCSSClass(d.status)} ${additionalCssClasses}`
             )
             .on('mouseover', (event: any, d: NodeDetails) => {
               const caption = d.name || d.id;
@@ -348,7 +366,8 @@ export class DagVisualizeView extends DOMWidgetView {
         (update: any) => {
           update.attr(
             'class',
-            (d: NodeDetails) => `${toCSSClass(d.status)} ${smallNodeClass}`
+            (d: NodeDetails) =>
+              `${toCSSClass(d.status)} ${additionalCssClasses}`
           );
         },
         (exit: any) => {
