@@ -55,7 +55,6 @@ interface WorkerData {
 }
 
 const NODE_SIZE = 15;
-// const PADDING = 20;
 
 export class DagVisualizeModel extends DOMWidgetModel {
   defaults(): any {
@@ -350,14 +349,13 @@ export class DagVisualizeView extends DOMWidgetView {
             )
             .on('mouseover', (event: any, d: NodeDetails) => {
               const caption = d.name || d.id;
-
               this.tooltip.transition().duration(200).style('opacity', 0.9);
               this.tooltip
                 .html(
                   `<p class="tiledb-plot-tooltip">${caption}: <b>${d.status}</b></p>`
                 )
-                .style('left', `${event.clientX + 10}px`)
-                .style('top', `${event.clientY + 10}px`);
+                .style('left', `${event.offsetX + 10}px`)
+                .style('top', `${event.offsetY + 10}px`);
             })
             .on('mouseout', () => {
               this.tooltip.transition().duration(500).style('opacity', 0);
