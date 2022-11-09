@@ -116,7 +116,7 @@ svg{
   background: var(--lightGray);
   box-shadow: 0 0 5px rgba(0, 0, 0, .25);
   color: var(--dark);
-  position: fixed;
+  position: absolute;
   text-align: center;
   font: 12px sans-serif;
   border: 0px;
