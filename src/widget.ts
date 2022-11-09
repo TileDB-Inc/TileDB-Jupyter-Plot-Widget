@@ -8,7 +8,6 @@ import {
 } from '@jupyter-widgets/base';
 import * as d3 from 'd3';
 import debounce from './debounce';
-import workerURL from 'file-loader!../lib/worker.js';
 import { MODULE_NAME, MODULE_VERSION } from './version';
 import { poll } from './poll';
 import clamp from './clamp';
@@ -33,25 +32,17 @@ interface ServerGraph {
 }
 
 interface NodeDetails {
-  fx: number;
-  fy: number;
+  x: number;
+  y: number;
   id: string;
   index: number;
   name: string;
   status: string;
-  x: number;
-  y: number;
 }
 
 interface Link {
-  source: NodeDetails;
-  target: NodeDetails;
-}
-
-interface WorkerData {
-  type: string;
-  nodes: NodeDetails[];
-  links: Link[];
+  parent: NodeDetails;
+  child: NodeDetails;
 }
 
 const NODE_SIZE = 15;
@@ -219,7 +210,12 @@ export class DagVisualizeView extends DOMWidgetView {
   }
 
   async createDag(): Promise<void> {
-    const { nodes, edges, node_details, positions } = this.data as ServerGraph;
+    const {
+      nodes,
+      edges,
+      node_details: serverDetails,
+      positions
+    } = this.data as ServerGraph;
     const [MAX_WIDTH, MAX_HEIGHT] = this.calculateBounds(positions);
     const [height, scaleY] = this.getHeightScale(MAX_HEIGHT, MAX_WIDTH);
     const svg = d3.select(this.el).select('svg');
@@ -273,106 +269,93 @@ export class DagVisualizeView extends DOMWidgetView {
       this.zoom(MAX_WIDTH, height);
     }
 
-    const links = edges.map(([parent, child]) => ({
-      source: parent,
-      target: child
+    const clientMap = Object.fromEntries(
+      Object.entries(serverDetails).map(
+        ([nodeId, nodeData], i): [string, NodeDetails] => {
+          const nodePosition = this.positions![nodeId];
+          const [rawX, rawY] = nodePosition;
+
+          const x = rawX + circleSize / 2;
+          const y = (MAX_HEIGHT - rawY) * scaleY;
+
+          return [
+            nodeId,
+            {
+              index: i,
+              name: nodeData.name,
+              status: nodeData.status,
+              id: nodeId,
+              x,
+              y
+            }
+          ];
+        }
+      )
+    );
+    const clientNodeList = Object.values(clientMap);
+
+    const links: Link[] = edges.map(([parent, child]) => ({
+      parent: clientMap[parent],
+      child: clientMap[child]
     }));
 
-    const nodeDetails: NodeDetails[] = Object.entries(node_details).map(
-      ([nodeId, nodeData], i) => {
-        const nodePosition = (this.positions as Positions)[nodeId];
-        const [rawX, rawY] = nodePosition;
+    const lines = this.wrapper.selectAll('path').data(links);
 
-        const x = rawX + circleSize / 2;
-        const y = (MAX_HEIGHT - rawY) * scaleY;
-
-        return {
-          index: i,
-          name: nodeData.name,
-          status: nodeData.status,
-          id: nodeId,
-          fx: x,
-          fy: y,
-          x,
-          y
-        };
-      }
+    lines.join(
+      (enter: any) => {
+        enter
+          .append('path')
+          .attr('d', (d: Link) => {
+            return `M${d.parent.x},${d.parent.y} C ${d.parent.x},${
+              (d.parent.y + d.child.y) / 2
+            } ${d.child.x},${(d.parent.y + d.child.y) / 2} ${d.child.x},${
+              d.child.y
+            }`;
+          })
+          .attr('class', (d: Link) => `path-${toCSSClass(d.child.status)}`);
+      },
+      (update: any) =>
+        update.attr('class', (d: Link) => `path-${toCSSClass(d.child.status)}`)
     );
 
-    const worker = new Worker(workerURL);
-    worker.postMessage({
-      nodes: nodeDetails,
-      links
-    });
-    worker.onmessage = (event: MessageEvent<WorkerData>) => {
-      if (event.data.type !== 'end') {
-        return;
-      }
+    const circles = this.wrapper.selectAll('circle').data(clientNodeList);
 
-      const { nodes, links } = event.data;
-
-      const lines = this.wrapper.selectAll('path').data(links);
-
-      lines.join(
-        (enter: any) => {
-          enter
-            .append('path')
-            .attr('d', (d: Link) => {
-              return `M${d.source.x},${d.source.y} C ${d.source.x},${
-                (d.source.y + d.target.y) / 2
-              } ${d.target.x},${(d.source.y + d.target.y) / 2} ${d.target.x},${
-                d.target.y
-              }`;
-            })
-            .attr('class', (d: Link) => `path-${toCSSClass(d.target.status)}`);
-        },
-        (update: any) =>
-          update.attr(
-            'class',
-            (d: Link) => `path-${toCSSClass(d.target.status)}`
-          )
-      );
-
-      const circles = this.wrapper.selectAll('circle').data(nodes);
-
-      circles.join(
-        (enter: any) => {
-          enter
-            .append('circle')
-            .attr('cx', (d: NodeDetails) => d.x)
-            .attr('cy', (d: NodeDetails) => d.y)
-            .attr('r', circleSize)
-            .attr(
-              'class',
-              (d: NodeDetails) =>
-                `${toCSSClass(d.status)} ${additionalCssClasses}`
-            )
-            .on('mouseover', (event: any, d: NodeDetails) => {
-              const caption = d.name || d.id;
-              this.tooltip.transition().duration(200).style('opacity', 0.9);
-              this.tooltip
-                .html(
-                  `<p class="tiledb-plot-tooltip">${caption}: <b>${d.status}</b></p>`
-                )
-                .style('left', `${event.offsetX + 10}px`)
-                .style('top', `${event.offsetY + 10}px`);
-            })
-            .on('mouseout', () => {
-              this.tooltip.transition().duration(500).style('opacity', 0);
-            });
-        },
-        (update: any) => {
-          update.attr(
+    circles.join(
+      (enter: any) => {
+        enter
+          .append('circle')
+          .attr('cx', (d: NodeDetails) => d.x)
+          .attr('cy', (d: NodeDetails) => d.y)
+          .attr('r', circleSize)
+          .attr(
             'class',
             (d: NodeDetails) =>
               `${toCSSClass(d.status)} ${additionalCssClasses}`
-          );
-        },
-        (exit: any) => {
-          exit.on('mouseover', null).on('mouseout', null).remove();
-        }
-      );
-    };
+          )
+          .on('mouseover', (event: any, d: NodeDetails) => {
+            const caption = d.name || d.id;
+            this.tooltip.transition().duration(200).style('opacity', 0.9);
+            this.tooltip
+              .html(
+                `<p class="tiledb-plot-tooltip">${caption}: <b>${d.status}</b></p>`
+              )
+              .style('left', `${event.offsetX + 10}px`)
+              .style('top', `${event.offsetY + 10}px`);
+          })
+          .on('mouseout', () => {
+            this.tooltip.transition().duration(500).style('opacity', 0);
+          });
+      },
+      (update: any) => {
+        update.attr(
+          'class',
+          (d: NodeDetails) => `${toCSSClass(d.status)} ${additionalCssClasses}`
+        );
+      },
+      (exit: any) => {
+        exit.on('mouseover', null).on('mouseout', null).remove();
+      }
+    );
   }
 
   createControls(): void {
