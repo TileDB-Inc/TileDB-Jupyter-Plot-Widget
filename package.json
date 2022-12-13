@@ -1,6 +1,6 @@
 {
   "name": "@tiledb-inc/tiledb-plot-widget",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Custom Jupyterlab widget for TileDB",
   "keywords": [
     "jupyter",
