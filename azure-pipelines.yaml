@@ -120,7 +120,7 @@ stages:
       inputs:
         pythonUploadServiceConnection: 'pypi-upload'
 
-    - script: python -m twine upload -r "pypi-upload" --config-file $(PYPIRC_PATH) dist/*.whl
+    - script: python -m twine upload -r "pypi-upload" --config-file $(PYPIRC_PATH) --verbose dist/*.whl
       displayName: 'Release to Pypi'
 
     - script: |
