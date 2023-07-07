@@ -144,7 +144,7 @@ export class DagVisualizeView extends DOMWidgetView {
     svg.call(zoom).on('wheel.zoom', null);
 
     function zoomHandler(this: any) {
-      d3.event?.preventDefault();
+      (d3 as any).event?.preventDefault();
       const direction = this.id === 'zoom_in' ? 0.2 : -0.2;
       /**
        * In SVG 1.1 <svg> elements did not support transform attributes. In SVG 2 it is proposed that they should.

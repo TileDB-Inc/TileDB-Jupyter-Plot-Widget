@@ -3,10 +3,10 @@ const version = require('./package.json').version;
 
 // Custom webpack rules
 const rules = [
-  { test: /\.ts$/, loader: 'ts-loader' },
-  { test: /\.js$/, loader: 'source-map-loader' },
-  { test: /\.css$/, use: ['style-loader', 'css-loader']},
-  { test: /\.svg/, use: { loader: 'svg-url-loader', options: {} }}
+  { test: /\.ts$/, use: [{ loader: 'ts-loader' }], type: 'javascript/auto' },
+  { test: /\.js$/, use:[{ loader: 'source-map-loader' }], type: 'javascript/auto' },
+  { test: /\.css$/, use: [{ loader: 'style-loader' }, { loader: 'css-loader' }], type: 'javascript/auto'},
+  { test: /\.svg/, use: [{ loader: 'svg-url-loader', options: {} }], type: 'javascript/auto'},
 ];
 
 // Packages that shouldn't be bundled but loaded at runtime

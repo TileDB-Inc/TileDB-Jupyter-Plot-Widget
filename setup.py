@@ -37,12 +37,19 @@ long_description = (HERE / "README.md").read_text()
 # Get the package info from package.json
 pkg_json = json.loads((HERE / "package.json").read_bytes())
 
+npm_version = pkg_json["version"]
+
+version = (
+    npm_version.replace("-alpha.", "a").replace("-beta.", "b").replace("-rc.", "rc")
+)
+
 packages = ["tiledb.plot.widget"] + [
     "tiledb.plot.widget." + x for x in setuptools.find_packages("./tiledb/plot/widget")
 ]
 
 setup_args = dict(
     name=name,
+    version=version,
     url=pkg_json["homepage"],
     author=pkg_json["author"]["name"],
     author_email=pkg_json["author"]["email"],
@@ -59,11 +66,6 @@ setup_args = dict(
         "setuptools-scm>=1.5.4",
         "setuptools-scm-git-archive",
     ],
-    use_scm_version={
-        "version_scheme": "guess-next-dev",
-        "local_scheme": "dirty-tag",
-        "write_to": "tiledb/plot/widget/version.py",
-    },
     zip_safe=False,
     include_package_data=True,
     python_requires=">=3.6",
