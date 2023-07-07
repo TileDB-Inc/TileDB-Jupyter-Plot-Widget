@@ -39,7 +39,7 @@ stages:
       displayName: 'Install NodeJS and yarn'
       condition: eq(variables['imageName'], 'macOS-12')
 
-    - script: python -m pip install --upgrade ipywidgets traitlets pytest build jupyter-packaging==0.10.6 jupyterlab==3.2.3
+    - script: python -m pip install --upgrade ipywidgets traitlets pytest build jupyter-packaging==0.10.6 jupyterlab==3.6.5
       # pip installs release candidates by default:
       #   https://github.com/pypa/pip/issues/4969
       displayName: 'Install dependencies'
