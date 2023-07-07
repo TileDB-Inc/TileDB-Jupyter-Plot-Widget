@@ -109,6 +109,12 @@ stages:
       inputs:
         versionSpec: '18.x'
 
+    - script: |
+        LATEST_GIT_TAG=$(git describe --tags --abbrev=0)
+        LATEST_GIT_TAG="${LATEST_GIT_TAG:1}"
+        npm version $LATEST_GIT_TAG --no-commit-hooks --no-git-tag-version
+      displayName: 'Update package.json version'
+
       # Build the python distribution from source
     - script: python -m build
       displayName: 'Build python'
