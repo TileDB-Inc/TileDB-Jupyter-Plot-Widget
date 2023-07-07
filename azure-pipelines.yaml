@@ -121,13 +121,13 @@ stages:
       env:
         NPM_TOKEN: $(NPM_TOKEN)
 
-    - task: TwineAuthenticate@1
-      displayName: 'Twine Authenticate'
-      inputs:
-        pythonUploadServiceConnection: 'pypi-upload'
+    # - task: TwineAuthenticate@1
+    #   displayName: 'Twine Authenticate'
+    #   inputs:
+    #     pythonUploadServiceConnection: 'pypi-upload'
 
-    - script: python -m twine upload -r "pypi-upload" --config-file $(PYPIRC_PATH) --verbose dist/*.whl
-      displayName: 'Release to Pypi'
+    # - script: python -m twine upload -r "pypi-upload" --config-file $(PYPIRC_PATH) --verbose dist/*.whl
+    #   displayName: 'Release to Pypi'
 
     - script: |
         echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
