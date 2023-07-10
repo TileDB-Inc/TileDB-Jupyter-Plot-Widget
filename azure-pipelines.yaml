@@ -12,18 +12,22 @@ stages:
   - job: Build
     strategy:
       matrix:
-        mac_38:
-          imageName: 'macOS-12'
+        linux_py38_jlab3:
+          imageName: 'ubuntu-22.04'
           python.version: '3.8'
-        mac_37:
-          imageName: 'macOS-12'
+          jupyterlab.version: '3.6.5'
+        linux_py39_jlab3:
+          imageName: 'ubuntu-22.04'
           python.version: '3.9'
-        linux_py38:
-          imageName: 'ubuntu-20.04'
+          jupyterlab.version: '3.6.5'
+        linux_py38_jlab4:
+          imageName: 'ubuntu-22.04'
           python.version: '3.8'
-        linux_py37:
-          imageName: 'ubuntu-20.04'
+          jupyterlab.version: '4.0.2'
+        linux_py39_jlab4:
+          imageName: 'ubuntu-22.04'
           python.version: '3.9'
+          jupyterlab.version: '4.0.2'
     pool:
       vmImage: $(imageName)
 
@@ -39,7 +43,7 @@ stages:
       displayName: 'Install NodeJS and yarn'
       condition: eq(variables['imageName'], 'macOS-12')
 
-    - script: python -m pip install --upgrade ipywidgets traitlets pytest build jupyter-packaging==0.10.6 jupyterlab==3.6.5
+    - script: python -m pip install --upgrade ipywidgets traitlets pytest build jupyter-packaging==0.10.6 jupyterlab==$(jupyterlab.version)
       # pip installs release candidates by default:
       #   https://github.com/pypa/pip/issues/4969
       displayName: 'Install dependencies'
@@ -54,7 +58,7 @@ stages:
     - task: NodeTool@0
       inputs:
         versionSpec: '18.x'
-    - script: yarn
+    - script: jlpm
       displayName: 'Install labextension dependencies'
       env:
         NPM_TOKEN: $(NPM_TOKEN)
@@ -102,7 +106,7 @@ stages:
         versionSpec: '3.8'
         architecture: 'x64'
 
-    - script: 'pip install twine build setuptools setuptools_scm jupyter-packaging==0.10.6 jupyterlab==3.2.3'
+    - script: 'pip install twine build setuptools setuptools_scm jupyter-packaging==0.10.6 jupyterlab==$(jupyterlab.version)'
       displayName: 'Install twine/build'
 
     - task: NodeTool@0
