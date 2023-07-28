@@ -106,7 +106,7 @@ stages:
         versionSpec: '3.8'
         architecture: 'x64'
 
-    - script: 'pip install twine build setuptools setuptools_scm jupyter-packaging==0.10.6 jupyterlab==$(jupyterlab.version)'
+    - script: 'pip install twine build setuptools setuptools_scm jupyter-packaging==0.10.6 jupyterlab==3.6.5'
       displayName: 'Install twine/build'
 
     - task: NodeTool@0
